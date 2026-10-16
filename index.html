@@ -1,0 +1,309 @@
+
+<!DOCTYPE html>
+<html lang="hi">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>YoKishta Supplier Panel</title>
+<style>
+:root{--p:#4930b5;--bg:#f5f6fb;--ink:#202033}
+*{box-sizing:border-box}
+body{margin:0;font-family:Arial,sans-serif;background:var(--bg);color:var(--ink)}
+header{background:white;padding:17px;display:flex;align-items:center;justify-content:space-between;box-shadow:0 2px 8px #0001;position:sticky;top:0;z-index:5}
+.brand{font-size:21px;font-weight:800;color:var(--p)}
+.brand small{display:block;font-size:12px;color:#777;font-weight:400;margin-top:4px}
+main{padding:16px;max-width:900px;margin:auto;padding-bottom:90px}
+h2{font-size:22px;margin:12px 0}
+h3{font-size:17px}
+.muted{color:#777;font-size:13px}
+.cards{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:12px}
+.card,.panel{background:white;border:1px solid #e8e8ef;border-radius:14px;padding:16px;margin-bottom:12px}
+.stat{font-size:26px;font-weight:bold;color:var(--p);margin-top:12px}
+button,.btn{border:0;border-radius:9px;background:var(--p);color:white;padding:12px 14px;font-size:14px;font-weight:600;cursor:pointer}
+button.secondary{background:#eeeafc;color:var(--p)}
+button.danger{background:#b92d45}
+button:active{opacity:.7}
+.actions{display:flex;gap:8px;flex-wrap:wrap;margin-top:12px}
+nav{position:fixed;bottom:0;left:0;right:0;background:white;border-top:1px solid #ddd;display:flex;overflow-x:auto;z-index:6}
+nav button{flex:1;min-width:65px;border-radius:0;background:white;color:#666;padding:12px 5px;font-size:11px}
+nav button.active{color:var(--p);border-top:3px solid var(--p)}
+nav span{display:block;font-size:20px;margin-bottom:4px}
+input,select,textarea{width:100%;padding:12px;margin:6px 0 14px;border:1px solid #ddd;border-radius:9px;font-size:15px;background:white}
+label{font-size:13px;font-weight:bold}
+.product{display:flex;gap:12px;align-items:center}
+.product img{width:76px;height:76px;object-fit:cover;border-radius:9px;background:#eee}
+.product .info{flex:1;min-width:0}
+.product h3{margin:0 0 6px;overflow-wrap:anywhere}
+.pill{font-size:11px;background:#e8f7e9;color:#24713a;padding:5px 8px;border-radius:20px;display:inline-block}
+.empty{text-align:center;padding:30px 10px;color:#777}
+.notice{background:#fff4ce;border-radius:10px;padding:13px;font-size:13px;line-height:1.5;margin:12px 0}
+.row{display:flex;justify-content:space-between;gap:8px;align-items:center}
+.hidden{display:none!important}
+@media(min-width:650px){.cards{grid-template-columns:repeat(4,minmax(0,1fr))}}
+</style>
+</head>
+<body>
+<header>
+  <div class="brand">YoKishta <small>SUPPLIER PANEL</small></div>
+  <button class="secondary" onclick="showPage('settings')">⚙ Settings</button>
+</header>
+
+<main>
+<section id="home" class="page">
+  <h2>Welcome, Supplier! 👋</h2>
+  <div class="muted">Manage your products and business</div>
+  <div class="notice">📦 अपना कैटलॉग जोड़ने के लिए Inventory में जाएँ और “Add Product” दबाएँ। यह शुरुआती वर्जन अभी इस डिवाइस में डेटा सेव करता है।</div>
+  <div class="cards">
+    <div class="card"><div class="muted">Total Products</div><div id="statProducts" class="stat">0</div></div>
+    <div class="card"><div class="muted">Active Products</div><div id="statActive" class="stat">0</div></div>
+    <div class="card"><div class="muted">Orders</div><div id="statOrders" class="stat">0</div></div>
+    <div class="card"><div class="muted">Low Stock</div><div id="statLow" class="stat">0</div></div>
+  </div>
+  <div class="panel">
+    <h3>Quick Actions</h3>
+    <div class="actions">
+      <button onclick="openAdd()">＋ Add Product</button>
+      <button class="secondary" onclick="showPage('inventory')">📦 Inventory</button>
+      <button class="secondary" onclick="showPage('orders')">🛒 Orders</button>
+    </div>
+  </div>
+  <div class="panel">
+    <h3>Recent Products</h3>
+    <div id="recentProducts"></div>
+  </div>
+</section>
+
+<section id="inventory" class="page hidden">
+  <div class="row"><div><h2>Inventory</h2><div class="muted">Manage your product catalog</div></div>
+  <button onclick="openAdd()">＋ Add Product</button></div>
+  <input id="searchProduct" placeholder="🔎 Search products..." oninput="renderProducts()">
+  <div class="actions">
+    <button class="secondary" onclick="setFilter('all')">All</button>
+    <button class="secondary" onclick="setFilter('active')">Active</button>
+    <button class="secondary" onclick="setFilter('low')">Low Stock</button>
+    <button class="secondary" onclick="setFilter('paused')">Paused</button>
+  </div>
+  <div id="productList"></div>
+</section>
+
+<section id="addProduct" class="page hidden">
+  <h2 id="formTitle">Add New Product</h2>
+  <div class="panel">
+    <form id="productForm">
+      <input id="editId" type="hidden">
+      <label>Product Name *</label>
+      <input id="pName" required maxlength="120" placeholder="Product का नाम">
+      <label>Category *</label>
+      <select id="pCategory" required>
+        <option value="">Select category</option>
+        <option>Electronics</option><option>Fashion</option>
+        <option>Home & Kitchen</option><option>Accessories</option>
+        <option>Beauty</option><option>Other</option>
+      </select>
+      <label>Selling Price (₹) *</label>
+      <input id="pPrice" type="number" min="1" step="0.01" required placeholder="299">
+      <label>MRP (₹)</label>
+      <input id="pMrp" type="number" min="0" step="0.01" placeholder="499">
+      <label>Available Stock *</label>
+      <input id="pStock" type="number" min="0" step="1" required value="1">
+      <label>SKU / Product Code</label>
+      <input id="pSku" maxlength="60" placeholder="YK-001">
+      <label>Product Image</label>
+      <input id="pImage" type="file" accept="image/*">
+      <label>Or Image URL</label>
+      <input id="pImageUrl" type="url" placeholder="https://...">
+      <label>Description</label>
+      <textarea id="pDesc" rows="4" maxlength="2000" placeholder="Product details..."></textarea>
+      <div class="actions">
+        <button type="submit">💾 Save Product</button>
+        <button type="button" class="secondary" onclick="showPage('inventory')">Cancel</button>
+      </div>
+    </form>
+  </div>
+</section>
+
+<section id="orders" class="page hidden">
+  <h2>Orders</h2>
+  <div class="notice">अभी कोई live customer order कनेक्ट नहीं है। Shopping वेबसाइट और Supabase जोड़ने के बाद वास्तविक orders यहाँ लाए जाएँगे।</div>
+  <div id="ordersList" class="panel empty">अभी कोई ऑर्डर उपलब्ध नहीं है।</div>
+</section>
+
+<section id="returns" class="page hidden">
+  <h2>Returns / RTO</h2>
+  <div class="panel">
+    <h3>Return Management</h3>
+    <p class="muted">Customer returns और RTO रिकॉर्ड यहाँ दिखेंगे, जब orders database कनेक्ट होगा।</p>
+    <span class="pill">Integration pending</span>
+  </div>
+</section>
+
+<section id="payments" class="page hidden">
+  <h2>Payments</h2>
+  <div class="panel">
+    <div class="muted">Total Sales</div><div class="stat">₹0</div>
+    <p class="muted">असली बिक्री, payout और payment history Supabase orders/payments data जोड़ने के बाद दिखेगी।</p>
+  </div>
+</section>
+
+<section id="settings" class="page hidden">
+  <h2>Settings</h2>
+  <div class="panel">
+    <h3>Supplier Profile</h3>
+    <label>Business Name</label><input id="businessName" placeholder="YoKishta Supplier">
+    <label>Contact Email</label><input id="businessEmail" type="email" placeholder="supplier@example.com">
+    <button onclick="saveSettings()">Save Settings</button>
+  </div>
+  <div class="panel">
+    <h3>Database Connection</h3>
+    <p class="muted">अगले चरण में मौजूदा YoKishta Shopping Supabase प्रोजेक्ट जोड़ा जाएगा। केवल Project URL और publishable key इस्तेमाल करेंगे। Secret / service-role key वेबसाइट में कभी न डालें।</p>
+    <span class="pill">Supabase connection not configured</span>
+  </div>
+  <div class="panel">
+    <h3>Local Data</h3>
+    <p class="muted">इस वर्जन में प्रोडक्ट इसी browser/device में सेव होते हैं। दूसरे device या Shopping वेबसाइट से अभी sync नहीं होते।</p>
+    <button class="danger" onclick="exportProducts()">Export Product Backup</button>
+  </div>
+</section>
+</main>
+
+<nav>
+<button class="active" data-page="home" onclick="showPage('home')"><span>🏠</span>Home</button>
+<button data-page="orders" onclick="showPage('orders')"><span>🛒</span>Orders</button>
+<button data-page="returns" onclick="showPage('returns')"><span>↩️</span>Returns</button>
+<button data-page="inventory" onclick="showPage('inventory')"><span>📦</span>Inventory</button>
+<button data-page="settings" onclick="showPage('settings')"><span>☰</span>Menu</button>
+</nav>
+
+<script>
+'use strict';
+const STORAGE_KEY='yokishta_supplier_products_v1';
+const SETTINGS_KEY='yokishta_supplier_settings_v1';
+let products=[];
+let filter='all';
+
+try { products=JSON.parse(localStorage.getItem(STORAGE_KEY)||'[]'); }
+catch(e) { products=[]; }
+
+function saveProducts(){
+  try { localStorage.setItem(STORAGE_KEY,JSON.stringify(products)); }
+  catch(e){ alert('Storage भर गया है। छोटी image इस्तेमाल करें।'); }
+}
+function esc(s){
+  return String(s??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+}
+function showPage(id){
+  document.querySelectorAll('.page').forEach(p=>p.classList.add('hidden'));
+  document.getElementById(id).classList.remove('hidden');
+  document.querySelectorAll('nav button').forEach(b=>b.classList.toggle('active',b.dataset.page===id));
+  if(id==='inventory')renderProducts();
+  if(id==='home')renderHome();
+  window.scrollTo(0,0);
+}
+function setFilter(f){filter=f;renderProducts();}
+function openAdd(id){
+  document.getElementById('productForm').reset();
+  document.getElementById('editId').value='';
+  document.getElementById('pStock').value=1;
+  document.getElementById('formTitle').textContent='Add New Product';
+  if(id){
+    const p=products.find(x=>x.id===id); if(!p)return;
+    document.getElementById('formTitle').textContent='Edit Product';
+    document.getElementById('editId').value=p.id;
+    document.getElementById('pName').value=p.name;
+    document.getElementById('pCategory').value=p.category;
+    document.getElementById('pPrice').value=p.price;
+    document.getElementById('pMrp').value=p.mrp||'';
+    document.getElementById('pStock').value=p.stock;
+    document.getElementById('pSku').value=p.sku||'';
+    document.getElementById('pImageUrl').value=p.image||'';
+    document.getElementById('pDesc').value=p.desc||'';
+  }
+  showPage('addProduct');
+}
+document.getElementById('productForm').addEventListener('submit',async e=>{
+  e.preventDefault();
+  const editId=document.getElementById('editId').value;
+  const old=products.find(p=>p.id===editId);
+  const file=document.getElementById('pImage').files[0];
+  let image=document.getElementById('pImageUrl').value.trim()||(old?.image||'');
+  if(file){
+    if(file.size>700000){alert('कृपया 700 KB से छोटी image चुनें।');return;}
+    image=await new Promise((resolve,reject)=>{
+      const reader=new FileReader();
+      reader.onload=()=>resolve(reader.result);
+      reader.onerror=reject;
+      reader.readAsDataURL(file);
+    }).catch(()=>image);
+  }
+  const p={
+    id:editId||('YK'+Date.now()),
+    name:document.getElementById('pName').value.trim(),
+    category:document.getElementById('pCategory').value,
+    price:Number(document.getElementById('pPrice').value),
+    mrp:Number(document.getElementById('pMrp').value)||0,
+    stock:Number(document.getElementById('pStock').value),
+    sku:document.getElementById('pSku').value.trim(),
+    image,
+    desc:document.getElementById('pDesc').value.trim(),
+    status:old?.status||'active',
+    updatedAt:new Date().toISOString()
+  };
+  if(editId)products=products.map(x=>x.id===editId?p:x);
+  else products.unshift(p);
+  saveProducts();renderHome();renderProducts();showPage('inventory');
+  alert(editId?'Product updated on this device.':'Product saved on this device.');
+});
+function productCard(p){
+  const img=p.image?`<img src="${esc(p.image)}" alt="" onerror="this.style.display='none'">`:'<div style="width:76px;height:76px;background:#eee;border-radius:9px;display:grid;place-items:center;font-size:28px">📦</div>';
+  return `<div class="panel"><div class="product">${img}<div class="info">
+  <h3>${esc(p.name)}</h3><div class="muted">${esc(p.category)} · SKU: ${esc(p.sku||'—')}</div>
+  <p><b>₹${p.price.toLocaleString('en-IN')}</b> ${p.mrp?`<del class="muted">₹${p.mrp.toLocaleString('en-IN')}</del>`:''}</p>
+  <div class="muted">Stock: ${p.stock} · <span class="pill">${p.status==='active'?'Active':'Paused'}</span></div>
+  </div></div><div class="actions">
+  <button class="secondary" onclick="openAdd('${p.id}')">✏️ Edit</button>
+  <button class="secondary" onclick="toggleStatus('${p.id}')">${p.status==='active'?'Pause':'Activate'}</button>
+  <button class="danger" onclick="deleteProduct('${p.id}')">Delete</button>
+  </div></div>`;
+}
+function renderProducts(){
+  const q=(document.getElementById('searchProduct')?.value||'').toLowerCase();
+  const filtered=products.filter(p=>{
+    const match=(p.name+' '+p.category+' '+p.sku).toLowerCase().includes(q);
+    return match&&(filter==='all'||(filter==='active'&&p.status==='active')||(filter==='paused'&&p.status==='paused')||(filter==='low'&&p.stock<5));
+  });
+  document.getElementById('productList').innerHTML=filtered.length?filtered.map(productCard).join(''):'<div class="panel empty">📦<p>कोई product नहीं मिला।</p><button onclick="openAdd()">＋ Add Product</button></div>';
+}
+function toggleStatus(id){
+  products=products.map(p=>p.id===id?{...p,status:p.status==='active'?'paused':'active'}:p);
+  saveProducts();renderProducts();renderHome();
+}
+function deleteProduct(id){
+  if(!confirm('इस product को इस device से delete करना है?'))return;
+  products=products.filter(p=>p.id!==id);saveProducts();renderProducts();renderHome();
+}
+function renderHome(){
+  document.getElementById('statProducts').textContent=products.length;
+  document.getElementById('statActive').textContent=products.filter(p=>p.status==='active').length;
+  document.getElementById('statOrders').textContent='—';
+  document.getElementById('statLow').textContent=products.filter(p=>p.stock<5).length;
+  document.getElementById('recentProducts').innerHTML=products.length?products.slice(0,3).map(productCard).join(''):'<div class="empty">अभी products नहीं हैं।<br><br><button onclick="openAdd()">＋ Add First Product</button></div>';
+}
+function saveSettings(){
+  const s={name:document.getElementById('businessName').value,email:document.getElementById('businessEmail').value};
+  localStorage.setItem(SETTINGS_KEY,JSON.stringify(s));alert('Settings saved on this device.');
+}
+function exportProducts(){
+  const blob=new Blob([JSON.stringify(products,null,2)],{type:'application/json'});
+  const url=URL.createObjectURL(blob);
+  const a=document.createElement('a');a.href=url;a.download='yokishta-products-backup.json';a.click();
+  URL.revokeObjectURL(url);
+}
+try{
+  const s=JSON.parse(localStorage.getItem(SETTINGS_KEY)||'{}');
+  document.getElementById('businessName').value=s.name||'';
+  document.getElementById('businessEmail').value=s.email||'';
+}catch(e){}
+renderHome();
+</script>
+</body>
+</html>
